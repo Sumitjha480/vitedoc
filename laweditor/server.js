@@ -335,57 +335,58 @@ app.get('/view-document/:id', async (req, res) => {
 
     // Handle editor-created documents (HTML content)
     if (document.type === 'text/html' && document.richContent) {
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${document.name}</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif;
-              line-height: 1.6;
-              margin: 2rem;
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          ${document.richContent}
-        </body>
-        </html>
-      `);
-      return;
+      return res.redirect(`/vitedoc/documents/edit/${document._id}`);
+      // res.send(`
+      //   <!DOCTYPE html>
+      //   <html>
+      //   <head>
+      //     <title>${document.name}</title>
+      //     <style>
+      //       body { 
+      //         font-family: Arial, sans-serif;
+      //         line-height: 1.6;
+      //         margin: 2rem;
+      //         max-width: 800px;
+      //         margin: 0 auto;
+      //         padding: 20px;
+      //       }
+      //     </style>
+      //   </head>
+      //   <body>
+      //     ${document.richContent}
+      //   </body>
+      //   </html>
+      // `);
+      // return;
     }
 
     // Handle Word documents
-    if (document.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        document.type === 'application/msword') {
-      const result = await mammoth.convertToHtml(document.content);
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${document.name}</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif;
-              line-height: 1.6;
-              margin: 2rem;
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          ${result.value}
-        </body>
-        </html>
-      `);
-      return;
-    }
+    // if (document.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    //     document.type === 'application/msword') {
+    //   const result = await mammoth.convertToHtml(document.content);
+    //   res.send(`
+    //     <!DOCTYPE html>
+    //     <html>
+    //     <head>
+    //       <title>${document.name}</title>
+    //       <style>
+    //         body { 
+    //           font-family: Arial, sans-serif;
+    //           line-height: 1.6;
+    //           margin: 2rem;
+    //           max-width: 800px;
+    //           margin: 0 auto;
+    //           padding: 20px;
+    //         }
+    //       </style>
+    //     </head>
+    //     <body>
+    //       ${result.value}
+    //     </body>
+    //     </html>
+    //   `);
+    //   return;
+    // }
 
     // For other document types (like PDF), send as before
     res.setHeader('Content-Type', document.type);
