@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Info - DocManager Pro</title>
+    <script src="/htmx/htmx.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <a href="/" class="flex items-center">
+                        <span class="text-xl font-bold text-gray-800">DocManager Pro</span>
+                    </a>
+                    <div class="ml-10 flex items-center space-x-4">
+                        <a href="/documents" class="text-gray-700 hover:text-gray-900">Document Manager</a>
+                        <a href="/chat" class="text-gray-700 hover:text-gray-900">Chat with Dikea</a>
+                        <a href="/user-info" class="text-gray-700 hover:text-gray-900">User Info</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button onclick="handleLogout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">User Information</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Username</label>
+                    <p class="mt-1 text-sm text-gray-900">sumit</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <p class="mt-1 text-sm text-gray-900">Sumit Kumar</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <p class="mt-1 text-sm text-gray-900">sumit@example.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function handleLogout() {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    console.error('Logout failed:', data.error);
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
