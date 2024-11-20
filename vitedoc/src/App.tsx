@@ -1,4 +1,4 @@
-import { useState} from 'react';
+import { useState, useEffect } from 'react';
 import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 import PageTabs from './components/PageTabs';
@@ -6,9 +6,55 @@ import { useDocsStore } from './store/docs';
 import { Menu, Save, ArrowLeft } from 'lucide-react';
 
 function App() {
-  const { docs, activeDoc, updateDoc } = useDocsStore();
+  const { docs, activeDoc, updateDoc, addDoc } = useDocsStore();
   const currentDoc = docs.find((doc) => doc.id === activeDoc);
   const [showSidebar, setShowSidebar] = useState(true);
+
+  useEffect(() => {
+    const loadDocument = async () => {
+      const editDocument = localStorage.getItem('editDocument');
+      const pathMatch = window.location.pathname.match(/\/documents\/edit\/([^\/]+)/);
+      
+      if (editDocument) {
+        const docData = JSON.parse(editDocument);
+        const newDoc = {
+          id: docData.id,
+          title: docData.title,
+          pages: [{
+            id: 'page-1',
+            content: docData.content
+          }],
+          activePage: 'page-1'
+        };
+        addDoc(newDoc);
+        localStorage.removeItem('editDocument');
+      } else if (pathMatch) {
+        const documentId = pathMatch[1];
+        try {
+          const response = await fetch(`/api/documents/${documentId}/edit`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const docData = await response.json();
+            const newDoc = {
+              id: docData.id,
+              title: docData.title,
+              pages: [{
+                id: 'page-1',
+                content: docData.content
+              }],
+              activePage: 'page-1'
+            };
+            addDoc(newDoc);
+          }
+        } catch (error) {
+          console.error('Error loading document:', error);
+        }
+      }
+    };
+
+    loadDocument();
+  }, [addDoc]);
 
   const handleContentChange = (content: string) => {
     if (activeDoc && currentDoc) {

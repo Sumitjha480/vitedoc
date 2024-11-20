@@ -136,6 +136,22 @@
     <script>
         let currentDocumentToDelete = null;
 
+        async function editDocument(docId) {
+            try {
+                const response = await fetch(`/api/documents/${docId}/edit`);
+                if (!response.ok) {
+                    throw new Error('Failed to get document');
+                }
+                const data = await response.json();
+                // Store document data in localStorage for vitedoc to access
+                localStorage.setItem('editDocument', JSON.stringify(data));
+                window.location.href = '/vitedoc';
+            } catch (error) {
+                console.error('Error editing document:', error);
+                showErrorNotification('Error loading document for editing');
+            }
+        }
+
         function showNewDocModal() {
             document.getElementById('newDocModal').classList.remove('hidden');
         }
@@ -285,14 +301,20 @@
                                     </p>
                                 </div>
                             </div>
-                                <button onclick="downloadDocument('${doc._id}', '${doc.name}')"
-                                    class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
-                                    Download
-                                </button>
-                                <button onclick="showDeleteModal('${doc._id}')" 
-                                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-                                    Delete
-                                </button>
+                                <div class="flex gap-2">
+                                    <button onclick="editDocument('${doc._id}')"
+                                        class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
+                                        Edit
+                                    </button>
+                                    <button onclick="downloadDocument('${doc._id}', '${doc.name}')"
+                                        class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                                        Download
+                                    </button>
+                                    <button onclick="showDeleteModal('${doc._id}')" 
+                                            class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                                        Delete
+                                    </button>
+                                </div>
                         </div>
                     `;
                     documentList.appendChild(docElement);

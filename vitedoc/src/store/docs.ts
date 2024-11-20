@@ -39,19 +39,21 @@ export const useDocsStore = create<DocsStore>((set) => ({
     },
   ],
   activeDoc: '1',
-  addDoc: () =>
-    set((state) => {
-      const newDoc = {
-        id: Date.now().toString(),
-        title: 'Untitled',
-        pages: [{ id: 'page-1', content: '' }],
-        activePage: 'page-1',
-      };
-      return {
-        docs: [...state.docs, newDoc],
-        activeDoc: newDoc.id,
-      };
-    }),
+    addDoc: (existingDoc?: Partial<Doc>) =>
+      set((state) => {
+        const newDoc = {
+          id: existingDoc?.id || Date.now().toString(),
+          title: existingDoc?.title || 'Untitled',
+          pages: existingDoc?.pages || [{ id: 'page-1', content: '' }],
+          activePage: existingDoc?.activePage || 'page-1',
+        };
+        // Remove any existing doc with same ID if it exists
+        const filteredDocs = state.docs.filter(d => d.id !== newDoc.id);
+        return {
+          docs: [...filteredDocs, newDoc],
+          activeDoc: newDoc.id,
+        };
+      }),
   addPage: (docId: string) =>
     set((state) => ({
       docs: state.docs.map((doc) => {
@@ -98,13 +100,22 @@ export const useDocsStore = create<DocsStore>((set) => ({
 saveDocument: async (docId: string) => {
     const state = useDocsStore.getState();
     const doc = state.docs.find(d => d.id === docId);
-    if (!doc) return;
+    if (!doc) {
+      console.error('Document not found:', docId);
+      throw new Error('Document not found');
+    }
 
     // Combine all pages content into one document
     const combinedContent = doc.pages.map(page => page.content).join('\n');
+    
+    if (!combinedContent.trim()) {
+      console.error('Empty document content');
+      throw new Error('Document content cannot be empty');
+    }
 
     try {
-      const response = await fetch('/api/save-vitedoc', {
+      const endpoint = '/api/save-vitedoc';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,11 +128,14 @@ saveDocument: async (docId: string) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save document');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Save response not OK:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to save document');
       }
 
       const result = await response.json();
-      console.log('Document saved:', result);
+      console.log('Document saved successfully:', result);
+      return result;
     } catch (error) {
       console.error('Error saving document:', error);
       throw error;

@@ -6,7 +6,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Italic, List, AlignLeft, AlignCenter, AlignRight, Highlighter, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { useDocsStore } from '../store/docs';
-import AnnotationPopover from './annotationPopover';
+import AnnotationPopover from './AnnotationPopover';
 import { Annotation } from '../extensions/annotation';
 
 const MenuButton = ({ onClick, active, children }: { onClick: () => void; active?: boolean; children: React.ReactNode }) => (

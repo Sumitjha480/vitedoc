@@ -2,13 +2,13 @@ import express from 'express';
 import session from 'express-session';
 import mongoose from 'mongoose';
 import multer from 'multer';
+import mammoth from 'mammoth';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { Document } from './models/document.js';
 import { User } from './models/user.js';
 import dotenv from 'dotenv';
 import MongoStore from 'connect-mongo';
-import mammoth from 'mammoth';
 import htmlDocx from 'html-docx-js';
 
 dotenv.config();
@@ -279,6 +279,43 @@ app.get('/download-document/:id', async (req, res) => {
   }
 });
 
+// Add endpoint to get document for editing
+app.get('/api/documents/:id/edit', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const document = await Document.findById(req.params.id);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Convert Word documents to HTML
+    if (document.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        document.type === 'application/msword') {
+      const result = await mammoth.convertToHtml(document.content);
+      return res.json({
+        id: document._id,
+        title: document.name,
+        content: result.value,
+        type: document.type
+      });
+    }
+
+    // For other document types
+    res.json({
+      id: document._id,
+      title: document.name,
+      content: document.richContent || document.content,
+      type: document.type
+    });
+  } catch (error) {
+    console.error('Error getting document:', error);
+    res.status(500).json({ error: 'Error getting document' });
+  }
+});
+
 app.get('/view-document/:id', async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -288,6 +325,12 @@ app.get('/view-document/:id', async (req, res) => {
     const document = await Document.findById(req.params.id);
     if (!document) {
       return res.status(404).send('Document not found');
+    }
+
+    // For Word documents, redirect to ViteDoc editor
+    if (document.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        document.type === 'application/msword') {
+      return res.redirect(`/vitedoc/documents/edit/${document._id}`);
     }
 
     // Handle editor-created documents (HTML content)
@@ -407,9 +450,11 @@ if (!isProduction) {
 // Handle saving vitedoc documents
 app.post('/api/save-vitedoc', requireLogin, async (req, res) => {
   try {
+    console.log('Received save request:', req.body);
     const { title, content } = req.body;
     
     if (!content) {
+      console.log('Content missing in request');
       return res.status(400).json({ error: 'Content is required' });
     }
 
@@ -421,8 +466,9 @@ app.post('/api/save-vitedoc', requireLogin, async (req, res) => {
       createdAt: new Date()
     });
 
-    await document.save();
-    res.json({ success: true, documentId: document._id });
+    const savedDoc = await document.save();
+    console.log('Document saved successfully:', savedDoc._id);
+    res.json({ success: true, documentId: savedDoc._id });
   } catch (error) {
     console.error('Error saving vitedoc document:', error);
     res.status(500).json({ error: 'Error saving document' });
