@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 import PageTabs from './components/PageTabs';
@@ -11,6 +11,7 @@ function App() {
   const currentDoc = docs.find((doc) => doc.id === activeDoc);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showAnnotations, setShowAnnotations] = useState(false);
+  const editorRef = useRef<any>(null);
 
   useEffect(() => {
     const loadDocument = async () => {
@@ -135,12 +136,15 @@ function App() {
                 content={currentPage.content}
                 onChange={handleContentChange}
                 docId={currentDoc.id}
+                onEditorReady={(editor) => {
+                  editorRef.current = editor;
+                }}
               />
             )}
           </div>
         </main>
       </div>
-      {showAnnotations && <AnnotationSidebar onClose={() => setShowAnnotations(false)} />}
+      {showAnnotations && <AnnotationSidebar onClose={() => setShowAnnotations(false)} editor={editorRef.current} />}
     </div>
   );
 }

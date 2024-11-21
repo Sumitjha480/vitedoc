@@ -5,6 +5,7 @@ declare module '@tiptap/core' {
     annotation: {
       setAnnotation: (comment: string) => ReturnType;
       unsetAnnotation: () => ReturnType;
+      removeAnnotation: () => ReturnType;
     };
   }
 }
@@ -54,6 +55,9 @@ export const Annotation = Mark.create({
         return commands.setMark(this.name, { comment });
       },
       unsetAnnotation: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      },
+      removeAnnotation: () => ({ commands }) => {
         return commands.unsetMark(this.name);
       },
     };

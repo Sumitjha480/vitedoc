@@ -4,9 +4,10 @@ import { X } from 'lucide-react';
 
 interface AnnotationSidebarProps {
   onClose: () => void;
+  editor: any; // TODO: Add proper type from @tiptap/react
 }
 
-export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({ onClose }) => {
+export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({ onClose, editor }) => {
   const { docs, activeDoc } = useDocsStore();
   const currentDoc = docs.find((doc) => doc.id === activeDoc);
   const currentPage = currentDoc?.pages.find(
@@ -32,14 +33,35 @@ export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({ onClose })
         ) : (
           <div className="space-y-4">
             {currentPage.annotations?.map((annotation) => (
-              <div
-                key={annotation.id}
-                className="p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="text-sm text-gray-600 mb-1">
-                  {new Date(annotation.createdAt).toLocaleString()}
+              <div key={annotation.id} className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
+                <div className="flex-1">
+                  <div className="text-sm text-gray-600 mb-1">
+                    {new Date(annotation.createdAt).toLocaleString()}
+                  </div>
+                  <div className="text-gray-900">{annotation.content}</div>
                 </div>
-                <div className="text-gray-900">{annotation.content}</div>
+                <button
+                  onClick={() => {
+                    if (currentDoc && editor) {
+                      const from = annotation.position.start;
+                      const to = annotation.position.end;
+                      
+                      // First remove the mark from the editor
+                      editor
+                        .chain()
+                        .focus()
+                        .setTextSelection({ from, to })
+                        .removeAnnotation()
+                        .run();
+                      
+                      // Then delete from the store
+                      useDocsStore.getState().deleteAnnotation(currentDoc.id, currentPage.id, annotation.id);
+                    }
+                  }}
+                  className="text-gray-400 hover:text-red-500 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>

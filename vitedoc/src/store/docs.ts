@@ -31,13 +31,11 @@ interface DocsStore {
   addPage: (docId: string) => void;
   updateDoc: (id: string, updates: Partial<Omit<Doc, 'pages'>>) => void;
   updatePage: (docId: string, pageId: string, content: string) => void;
-  addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'>) => void;
   deleteAnnotation: (docId: string, pageId: string, annotationId: string) => void;
   setActiveDoc: (id: string) => void;
   setActivePage: (docId: string, pageId: string) => void;
   saveDocument: (docId: string) => Promise<void>;
   addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'>) => void;
-  removeAnnotation: (docId: string, pageId: string, annotationId: string) => void;
 }
 
 export const useDocsStore = create<DocsStore>((set) => ({
@@ -78,6 +76,7 @@ export const useDocsStore = create<DocsStore>((set) => ({
           const newPage = {
             id: `page-${doc.pages.length + 1}`,
             content: '',
+            annotations: [],
           };
           return {
             ...doc,
@@ -136,24 +135,24 @@ addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'
       ),
     })),
 
-  deleteAnnotation: (docId: string, pageId: string, annotationId: string) =>
-    set((state) => ({
-      docs: state.docs.map((doc) =>
-        doc.id === docId
-          ? {
-              ...doc,
-              pages: doc.pages.map((page) =>
-                page.id === pageId
-                  ? {
-                      ...page,
-                      annotations: page.annotations.filter((a) => a.id !== annotationId),
-                    }
-                  : page
-              ),
-            }
-          : doc
-      ),
-    })),
+    deleteAnnotation: (docId: string, pageId: string, annotationId: string) =>
+      set((state) => ({
+        docs: state.docs.map((doc) =>
+          doc.id === docId
+            ? {
+                ...doc,
+                pages: doc.pages.map((page) =>
+                  page.id === pageId
+                    ? {
+                        ...page,
+                        annotations: page.annotations.filter((a) => a.id !== annotationId),
+                      }
+                    : page
+                ),
+              }
+            : doc
+        ),
+      })),
 
   saveDocument: async (docId: string) => {
     const state = useDocsStore.getState();

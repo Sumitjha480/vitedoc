@@ -18,7 +18,14 @@ const MenuButton = ({ onClick, active, children }: { onClick: () => void; active
   </button>
 );
 
-export default function Editor({ content, onChange, docId }: { content: string; onChange: (content: string) => void; docId: string }) {
+interface EditorProps {
+  content: string;
+  onChange: (content: string) => void;
+  docId: string;
+  onEditorReady?: (editor: any) => void;
+}
+
+export default function Editor({ content, onChange, docId, onEditorReady }: EditorProps) {
   const [showAnnotationPopover, setShowAnnotationPopover] = useState(false);
   const [annotationPosition, setAnnotationPosition] = useState({ top: 0, left: 0 });
   const { docs, setActivePage } = useDocsStore();
@@ -50,6 +57,12 @@ export default function Editor({ content, onChange, docId }: { content: string; 
       editor.commands.setContent(content);
     }
   }, [editor, content]);
+
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   const navigateToPage = (direction: 'next' | 'prev') => {
     if (!currentDoc) return;
