@@ -290,6 +290,8 @@ app.get('/api/documents/:id/edit', async (req, res) => {
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
+    console.log(document.pages);
+    console.log(document.annotations);
 
     // Convert Word documents to HTML
     if (document.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -299,7 +301,9 @@ app.get('/api/documents/:id/edit', async (req, res) => {
         id: document._id,
         title: document.name,
         content: result.value,
-        type: document.type
+        type: document.type,
+        annotations: document.annotations,
+        pages: document.pages,
       });
     }
 
@@ -308,7 +312,9 @@ app.get('/api/documents/:id/edit', async (req, res) => {
       id: document._id,
       title: document.name,
       content: document.richContent || document.content,
-      type: document.type
+      type: document.type,
+      annotations: document.annotations,
+      pages: document.pages,
     });
   } catch (error) {
     console.error('Error getting document:', error);

@@ -25,7 +25,11 @@ function App() {
           title: docData.title,
           pages: [{
             id: 'page-1',
-            content: docData.content
+            content: docData.content,
+            annotations: docData.annotations?.map((ann: any) => ({
+              ...ann,
+              createdAt: new Date(ann.createdAt)
+            })) || []
           }],
           activePage: 'page-1'
         };
@@ -44,7 +48,11 @@ function App() {
               title: docData.title,
               pages: [{
                 id: 'page-1',
-                content: docData.content
+                content: docData.content,
+                annotations: docData.annotations?.map((ann: any) => ({
+                  ...ann,
+                  createdAt: new Date(ann.createdAt)
+                })) || []
               }],
               activePage: 'page-1'
             };
