@@ -24,6 +24,7 @@ export default function Editor({ content, onChange, docId }: { content: string; 
   const { docs, setActivePage } = useDocsStore();
   const currentDoc = docs.find(doc => doc.id === docId);
   const currentPageIndex = currentDoc?.pages.findIndex(page => page.id === currentDoc.activePage) ?? 0;
+  const currentPage = currentDoc?.pages[currentPageIndex];
 
   const editor = useEditor({
     extensions: [
@@ -134,9 +135,10 @@ export default function Editor({ content, onChange, docId }: { content: string; 
                   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
                   
                   setAnnotationPosition({
-                    top: rect.bottom + scrollTop + 10, // Position below text with 10px gap
+                    top: rect.bottom + scrollTop + 10,
                     left: rect.left + scrollLeft + (rect.width / 2),
                   });
+                  
                   setShowAnnotationPopover(true);
                 }
               }}

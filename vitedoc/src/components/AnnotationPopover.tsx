@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { MessageSquare } from 'lucide-react';
+import { useDocsStore } from '../store/docs';
 
 interface AnnotationPopoverProps {
   editor: Editor;
@@ -38,9 +39,24 @@ export default function AnnotationPopover({ editor, isVisible, onClose, position
     };
   }, [onClose]);
 
-  const addAnnotation = () => {
-    if (!annotation.trim() || !selectedText) return;
+  const { docs, activeDoc, addAnnotation: addAnnotationToStore } = useDocsStore();
+  const currentDoc = docs.find((doc) => doc.id === activeDoc);
 
+  const addAnnotation = () => {
+    if (!annotation.trim() || !selectedText || !currentDoc) return;
+
+    const selection = editor.state.selection;
+    const newAnnotation = {
+      content: annotation,
+      pageId: currentDoc.activePage,
+      createdAt: new Date(),
+      position: {
+        start: selection.from,
+        end: selection.to
+      }
+    };
+
+    addAnnotationToStore(currentDoc.id, currentDoc.activePage, newAnnotation);
     editor.chain().focus().setMark('annotation', { comment: annotation }).run();
     setAnnotation('');
     onClose();

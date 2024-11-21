@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 import PageTabs from './components/PageTabs';
+import { AnnotationSidebar } from './components/AnnotationSidebar';
 import { useDocsStore } from './store/docs';
-import { Menu, Save, ArrowLeft } from 'lucide-react';
+import { Menu, Save, ArrowLeft, MessageSquare } from 'lucide-react';
 
 function App() {
   const { docs, activeDoc, updateDoc, addDoc } = useDocsStore();
   const currentDoc = docs.find((doc) => doc.id === activeDoc);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showAnnotations, setShowAnnotations] = useState(false);
 
   useEffect(() => {
     const loadDocument = async () => {
@@ -117,6 +119,13 @@ function App() {
             <Save className="w-4 h-4" />
             <span>Save</span>
           </button>
+          <button
+            onClick={() => setShowAnnotations(!showAnnotations)}
+            className="flex items-center space-x-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Annotations</span>
+          </button>
         </header>
         {currentDoc && <PageTabs docId={currentDoc.id} />}
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
@@ -131,6 +140,7 @@ function App() {
           </div>
         </main>
       </div>
+      {showAnnotations && <AnnotationSidebar onClose={() => setShowAnnotations(false)} />}
     </div>
   );
 }

@@ -453,6 +453,7 @@ app.post('/api/save-vitedoc', requireLogin, async (req, res) => {
   try {
     console.log('Received save request:', req.body);
     const { title, content } = req.body;
+    console.log(req.body);
     
     if (!content) {
       console.log('Content missing in request');
@@ -464,7 +465,8 @@ app.post('/api/save-vitedoc', requireLogin, async (req, res) => {
       richContent: content,
       type: 'text/html',
       userId: req.session.user.username,
-      createdAt: new Date()
+      createdAt: new Date(),
+      annotations: req.body.annotations || [],
     });
 
     const savedDoc = await document.save();

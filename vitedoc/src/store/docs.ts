@@ -1,8 +1,20 @@
 import { create } from 'zustand';
 
+interface Annotation {
+  id: string;
+  content: string;
+  pageId: string;
+  createdAt: Date;
+  position: {
+    start: number;
+    end: number;
+  };
+}
+
 interface Page {
   id: string;
   content: string;
+  annotations: Annotation[];
 }
 
 interface Doc {
@@ -19,9 +31,13 @@ interface DocsStore {
   addPage: (docId: string) => void;
   updateDoc: (id: string, updates: Partial<Omit<Doc, 'pages'>>) => void;
   updatePage: (docId: string, pageId: string, content: string) => void;
+  addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'>) => void;
+  deleteAnnotation: (docId: string, pageId: string, annotationId: string) => void;
   setActiveDoc: (id: string) => void;
   setActivePage: (docId: string, pageId: string) => void;
   saveDocument: (docId: string) => Promise<void>;
+  addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'>) => void;
+  removeAnnotation: (docId: string, pageId: string, annotationId: string) => void;
 }
 
 export const useDocsStore = create<DocsStore>((set) => ({
@@ -33,6 +49,7 @@ export const useDocsStore = create<DocsStore>((set) => ({
         {
           id: 'page-1',
           content: '<h1>Welcome to TipTap Docs</h1><p>Start typing to create your document...</p>',
+          annotations: [],
         }
       ],
       activePage: 'page-1',
@@ -44,7 +61,7 @@ export const useDocsStore = create<DocsStore>((set) => ({
         const newDoc = {
           id: existingDoc?.id || Date.now().toString(),
           title: existingDoc?.title || 'Untitled',
-          pages: existingDoc?.pages || [{ id: 'page-1', content: '' }],
+          pages: existingDoc?.pages || [{ id: 'page-1', content: '', annotations: [] }],
           activePage: existingDoc?.activePage || 'page-1',
         };
         // Remove any existing doc with same ID if it exists
@@ -97,7 +114,48 @@ export const useDocsStore = create<DocsStore>((set) => ({
         doc.id === docId ? { ...doc, activePage: pageId } : doc
       ),
     })),
-saveDocument: async (docId: string) => {
+addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'>) =>
+    set((state) => ({
+      docs: state.docs.map((doc) =>
+        doc.id === docId
+          ? {
+              ...doc,
+              pages: doc.pages.map((page) =>
+                page.id === pageId
+                  ? {
+                      ...page,
+                      annotations: [
+                        ...page.annotations,
+                        { ...annotation, id: Date.now().toString() },
+                      ],
+                    }
+                  : page
+              ),
+            }
+          : doc
+      ),
+    })),
+
+  deleteAnnotation: (docId: string, pageId: string, annotationId: string) =>
+    set((state) => ({
+      docs: state.docs.map((doc) =>
+        doc.id === docId
+          ? {
+              ...doc,
+              pages: doc.pages.map((page) =>
+                page.id === pageId
+                  ? {
+                      ...page,
+                      annotations: page.annotations.filter((a) => a.id !== annotationId),
+                    }
+                  : page
+              ),
+            }
+          : doc
+      ),
+    })),
+
+  saveDocument: async (docId: string) => {
     const state = useDocsStore.getState();
     const doc = state.docs.find(d => d.id === docId);
     if (!doc) {
@@ -122,7 +180,14 @@ saveDocument: async (docId: string) => {
         },
         body: JSON.stringify({
           title: doc.title,
-          content: combinedContent
+          content: combinedContent,
+          annotations: doc.pages.flatMap(page => 
+            (page.annotations || []).map(ann => ({
+              ...ann,
+              pageId: page.id,
+              createdAt: ann.createdAt || new Date()
+            }))
+          )
         }),
         credentials: 'include'
       });
