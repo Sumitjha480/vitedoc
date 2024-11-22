@@ -1,5 +1,6 @@
 import { FileText, Plus, Menu } from 'lucide-react';
 import { useDocsStore } from '../store/docs';
+import ImportButton from './ImportButton';
 
 export default function Sidebar({ onToggle }: { onToggle: () => void }) {
   const { docs, activeDoc, addDoc, setActiveDoc } = useDocsStore();
@@ -21,6 +22,7 @@ export default function Sidebar({ onToggle }: { onToggle: () => void }) {
           <Plus className="w-5 h-5" />
         </button>
       </div>
+      <ImportButton />
       <div className="space-y-2">
         {docs.map((doc) => (
           <button

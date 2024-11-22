@@ -36,6 +36,7 @@ interface DocsStore {
   setActivePage: (docId: string, pageId: string) => void;
   saveDocument: (docId: string) => Promise<void>;
   addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'>) => void;
+  importDocument: (title: string, pages: { content: string; comments: Comment[] }[]) => void;
 }
 
 export const useDocsStore = create<DocsStore>((set) => ({
@@ -153,6 +154,24 @@ addAnnotation: (docId: string, pageId: string, annotation: Omit<Annotation, 'id'
             : doc
         ),
       })),
+      
+  importDocument: (title, pages) =>
+    set((state) => {
+      const newDoc = {
+        id: Date.now().toString(),
+        title,
+        pages: pages.map((page, index) => ({
+          id: `page-${index + 1}`,
+          content: page.content,
+          comments: page.comments,
+        })),
+        activePage: 'page-1',
+      };
+      return {
+        docs: [...state.docs, newDoc],
+        activeDoc: newDoc.id,
+      };
+    }),
 
   saveDocument: async (docId: string) => {
     const state = useDocsStore.getState();

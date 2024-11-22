@@ -5,6 +5,7 @@ import PageTabs from './components/PageTabs';
 import { AnnotationSidebar } from './components/AnnotationSidebar';
 import { useDocsStore } from './store/docs';
 import { Menu, Save, ArrowLeft, MessageSquare } from 'lucide-react';
+import ExportButton from './components/ExportButton';
 
 function App() {
   const { docs, activeDoc, updateDoc, addDoc } = useDocsStore();
@@ -135,6 +136,7 @@ function App() {
             <MessageSquare className="w-4 h-4" />
             <span>Annotations</span>
           </button>
+          {currentDoc && <ExportButton docId={currentDoc.id} />}
         </header>
         {currentDoc && <PageTabs docId={currentDoc.id} />}
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
