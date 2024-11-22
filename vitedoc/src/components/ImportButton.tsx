@@ -18,6 +18,9 @@ export default function ImportButton() {
       
       if (isPdf) {
 
+        //FIX IT
+        //import for pdf is not working
+
         const arrayBuffer = await file.arrayBuffer();
         console.log('ArrayBuffer length:', arrayBuffer.byteLength);
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
