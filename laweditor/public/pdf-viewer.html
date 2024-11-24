@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <script src="https://documentservices.adobe.com/view-sdk/viewer.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #adobe-dc-view {
+            height: calc(100vh - 64px);
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <nav class="bg-white shadow-lg h-16">
+        <div class="max-w-7xl mx-auto px-4 h-full">
+            <div class="flex justify-between items-center h-full">
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='/documents'" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Back to Documents
+                    </button>
+                    <h1 id="documentTitle" class="text-xl font-semibold text-gray-800"></h1>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div id="adobe-dc-view"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileId = urlParams.get('fileId');
+            const fileName = urlParams.get('fileName');
+
+            if (fileName) {
+                document.getElementById('documentTitle').textContent = fileName;
+                document.title = `Viewing: ${fileName}`;
+            }
+
+            if (!fileId) {
+                alert('No document specified');
+                window.location.href = '/documents';
+                return;
+            }
+
+            // Initialize Adobe PDF Embed API
+            const adobeDCView = new AdobeDC.View({
+                clientId: "8c0cd670273d451cbc9b351b11d22318", // Adobe PDF Embed API client ID
+                divId: "adobe-dc-view"
+            });
+
+            // Show the PDF
+            adobeDCView.previewFile({
+                content: { location: { url: `/view-document/${fileId}` } },
+                metaData: { fileName: fileName || 'document.pdf' }
+            }, {
+                embedMode: "FULL_WINDOW",
+                showDownloadPDF: true,
+                showPrintPDF: true,
+                showLeftHandPanel: true,
+                showAnnotationTools: true,
+                enableFormFilling: true,
+                showZoomControl: true,
+                showPageControls: true,
+                showBookmarks: true,
+                enableSearchAPIs: true,
+            });
+
+            // Add event listeners for various PDF interactions
+            adobeDCView.registerCallback(
+                AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
+                function(event) {
+                    switch (event.type) {
+                        case "DOCUMENT_OPEN":
+                            console.log("Document opened successfully");
+                            break;
+                        case "PAGE_VIEW":
+                            console.log("Page viewed:", event.data);
+                            break;
+                        case "SAVE_API":
+                            console.log("Document saved");
+                            break;
+                        case "TEXT_COPY":
+                            console.log("Text copied");
+                            break;
+                        case "ANNOTATION_ADDED":
+                            console.log("Annotation added:", event.data);
+                            break;
+                        case "ANNOTATION_UPDATED":
+                            console.log("Annotation updated:", event.data);
+                            break;
+                        case "ANNOTATION_DELETED":
+                            console.log("Annotation deleted:", event.data);
+                            break;
+                    }
+                }
+            );
+        });
+    </script>
+</body>
+</html>

@@ -185,6 +185,11 @@ app.get('/documents', requireLogin, async (req, res) => {
   res.sendFile(join(__dirname, 'public', 'documents.html'));
 });
 
+// Add PDF viewer route
+app.get('/pdf-viewer.html', requireLogin, (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'pdf-viewer.html'));
+});
+
 app.get('/chat', requireLogin, (req, res) => {
   res.sendFile(join(__dirname, 'public', 'chat.html'));
 });

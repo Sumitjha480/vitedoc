@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    <!-- Document Viewer Modal -->
+    <!-- Document Viewer Modal (for non-PDF files) -->
     <div id="documentViewerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh]">
@@ -174,10 +174,16 @@
             window.location.href = '/vitedoc';
         }
 
-        function showDocumentViewer(docId, docName) {
-            document.getElementById('viewerTitle').textContent = docName;
-            document.getElementById('documentViewer').src = `/view-document/${docId}`;
-            document.getElementById('documentViewerModal').classList.remove('hidden');
+        function showDocumentViewer(docId, docName, docType) {
+            if (docType === 'application/pdf') {
+                // Redirect to PDF viewer for PDF files
+                window.location.href = `/pdf-viewer.html?fileId=${docId}&fileName=${encodeURIComponent(docName)}`;
+            } else {
+                // Use modal viewer for non-PDF files
+                document.getElementById('viewerTitle').textContent = docName;
+                document.getElementById('documentViewer').src = `/view-document/${docId}`;
+                document.getElementById('documentViewerModal').classList.remove('hidden');
+            }
         }
 
         function hideDocumentViewer() {
@@ -279,6 +285,29 @@
             }
         }
 
+        async function downloadDocument(docId, docName) {
+            try {
+                const response = await fetch(`/download-document/${docId}`);
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = docName;
+                document.body.appendChild(a);
+                a.click();
+                
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Download error:', error);
+                showErrorNotification('Error downloading document');
+            }
+        }
+
         // Load documents
         fetch('/api/documents')
             .then(response => response.json())
@@ -290,7 +319,7 @@
                     docElement.setAttribute('data-doc-id', doc._id);
                     docElement.innerHTML = `
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center cursor-pointer" onclick="showDocumentViewer('${doc._id}', '${doc.name}')">
+                            <div class="flex items-center cursor-pointer" onclick="showDocumentViewer('${doc._id}', '${doc.name}', '${doc.type}')">
                                 <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -310,61 +339,63 @@
                                     </p>
                                 </div>
                             </div>
-                                <div class="relative" x-data="{ open: false }">
-                                    <button @click="open = !open" 
-                                            class="bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200 flex items-center">
-                                        Actions
-                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    <div x-show="open" 
-                                         @click.away="open = false"
-                                         class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                                        <div class="py-1">
-                                            <button onclick="editDocument('${doc._id}')"
-                                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Edit
-                                            </button>
-                                            <button onclick="downloadDocument('${doc._id}', '${doc.name}')"
-                                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Download
-                                            </button>
-                                            <button onclick="showDeleteModal('${doc._id}')"
-                                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-red-600">
-                                                Delete
-                                            </button>
-                                        </div>
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" 
+                                        class="bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200 flex items-center">
+                                    Actions
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div x-show="open" 
+                                     @click.away="open = false"
+                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                                    <div class="py-1">
+                                        <button onclick="editDocument('${doc._id}')"
+                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Edit
+                                        </button>
+                                        <button onclick="downloadDocument('${doc._id}', '${doc.name}')"
+                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Download
+                                        </button>
+                                        <button onclick="showDeleteModal('${doc._id}')"
+                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-red-600">
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
                         </div>
                     `;
                     documentList.appendChild(docElement);
                 });
             });
-    async function downloadDocument(docId, docName) {
-            try {
-                const response = await fetch(`/download-document/${docId}`);
-                if (!response.ok) {
-                    throw new Error('Download failed');
-                }
+
+            // old inwindow viewer
+    // async function downloadDocument(docId, docName) {
+    //         try {
+    //             const response = await fetch(`/download-document/${docId}`);
+    //             if (!response.ok) {
+    //                 throw new Error('Download failed');
+    //             }
                 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = docName;
-                document.body.appendChild(a);
-                a.click();
+    //             const blob = await response.blob();
+    //             const url = window.URL.createObjectURL(blob);
+    //             const a = document.createElement('a');
+    //             a.href = url;
+    //             a.download = docName;
+    //             document.body.appendChild(a);
+    //             a.click();
                 
-                // Cleanup
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (error) {
-                console.error('Download error:', error);
-                showErrorNotification('Error downloading document');
-            }
-        }
+    //             // Cleanup
+    //             window.URL.revokeObjectURL(url);
+    //             document.body.removeChild(a);
+    //         } catch (error) {
+    //             console.error('Download error:', error);
+    //             showErrorNotification('Error downloading document');
+    //         }
+    //     }
     </script>
 </body>
 </html>
