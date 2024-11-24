@@ -76,10 +76,22 @@
         .resize-overlay.active {
             display: block;
         }
+        /* Hide Adobe branding and legal notices */
+        /* .adobe-logo, 
+        .adobe-legal-copyright-notice,
+        .adobe-dc-view-license-banner,
+        [data-testid="adobe-logo"],
+        [data-testid="legal-notices"],
+        .adobe-viewer-footer,
+        .adobe-reader-footer {
+            display: none !important;
+        } */
     </style>
 </head>
 <body class="flex flex-col h-screen">
+    <!-- Rest of the HTML content remains exactly the same until the script section -->
     <nav class="bg-white shadow-lg h-16">
+        <!-- Navigation content remains the same -->
         <div class="max-w-7xl mx-auto px-4 h-full">
             <div class="flex justify-between items-center h-full">
                 <div class="flex items-center space-x-4">
@@ -108,6 +120,7 @@
 
         <!-- Chat Sidebar -->
         <div id="chatSidebar" class="chat-sidebar hidden fixed right-0 top-16 bottom-0 w-80 bg-white shadow-lg flex flex-col">
+            <!-- Rest of the chat sidebar content remains the same -->
             <!-- Resize Handle -->
             <div id="resizeHandle" class="resize-handle"></div>
             
@@ -183,13 +196,13 @@
                     return;
                 }
 
-                // Initialize Adobe PDF Embed API
+                // Initialize Adobe PDF Embed API with modified configuration
                 const adobeDCView = new AdobeDC.View({
                     clientId: "8c0cd670273d451cbc9b351b11d22318",
                     divId: "adobe-dc-view"
                 });
 
-                // Show the PDF
+                // Show the PDF with modified viewer configuration
                 adobeDCView.previewFile({
                     content: { location: { url: `/view-document/${fileId}` } },
                     metaData: { fileName: fileName || 'document.pdf' }
@@ -206,6 +219,7 @@
                     enableSearchAPIs: true,
                 });
 
+                // Rest of the JavaScript code remains exactly the same
                 // Chat functionality
                 const chatToggle = document.getElementById('chatToggle');
                 const chatSidebar = document.getElementById('chatSidebar');
@@ -216,6 +230,31 @@
                 const resizeHandle = document.getElementById('resizeHandle');
                 const closeChatBtn = document.getElementById('closeChatBtn');
                 const resizeOverlay = document.getElementById('resizeOverlay');
+
+                // Add goToReference to window object for global access
+                window.goToReference = function(reference) {
+                    console.log('Navigating to page:', reference.page_number[0]);
+                    if (adobeDCView) {
+                        // First navigate to the page
+                        adobeDCView.previewFile.setPage(reference.page_number[0])
+                            .then(() => {
+                                // Then search for the text
+                                return adobeDCView.previewFile.search({
+                                    query: reference.text,
+                                    matchCase: false,
+                                    matchWholeWord: false,
+                                    useRegex: false
+                                });
+                            })
+                            .then(searchResults => {
+                                console.log('Search results:', searchResults);
+                                // The search results will automatically be highlighted in the PDF
+                            })
+                            .catch(error => {
+                                console.error('Error during search:', error);
+                            });
+                    }
+                };
 
                 function toggleChat(show) {
                     chatSidebar.classList.toggle('hidden', !show);
@@ -257,15 +296,42 @@
                     }
                 });
 
-                function addMessage(message, isUser = false) {
+                function addMessage(message, isUser = false, references = null) {
                     const messageDiv = document.createElement('div');
                     messageDiv.className = 'bg-white rounded-lg p-3 shadow-sm mb-4';
-                    messageDiv.innerHTML = `
+                    
+                    let content = `
                         <div class="text-sm ${isUser ? 'text-green-500' : 'text-blue-500'} font-semibold mb-1">
                             ${isUser ? 'You' : 'Dikea AI'}
                         </div>
                         <div class="text-gray-700">${message}</div>
                     `;
+
+                    if (references && references.length > 0) {
+                        content += `
+                            <div class="mt-3 border-t pt-2">
+                                <div class="text-sm text-gray-500 mb-2">References:</div>
+                                <div class="space-y-2">
+                                    ${references.map((ref, index) => `
+                                        <div class="text-sm">
+                                            <button 
+                                                onclick='window.goToReference(${JSON.stringify(ref)})'
+                                                class="text-blue-500 hover:text-blue-700 flex items-center"
+                                            >
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+                                                </svg>
+                                                View Reference ${index + 1} (Page${ref.page_number.length > 1 ? 's' : ''} ${ref.page_number.join(', ')})
+                                            </button>
+                                            <div class="ml-5 mt-1 text-gray-600 text-xs italic">${ref.text}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    messageDiv.innerHTML = content;
                     chatMessages.appendChild(messageDiv);
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
@@ -276,9 +342,23 @@
                         addMessage(message, true);
                         chatInput.value = '';
                         
-                        // Simulate AI response (replace with actual API call)
+                        // Simulate AI response with references
                         setTimeout(() => {
-                            addMessage("I understand you're asking about this document. How can I help you analyze or understand it better?");
+                            const dummyResponse = {
+                                answer: "I found information about non-payable items in the document. These items will be covered according to the specified terms.",
+                                references: [
+                                    {
+                                        page_number: [1],
+                                        text: "Non-payable items will be covered"
+                                    },
+                                    {
+                                        page_number: [2],
+                                        text: "Further details about coverage can be found in section 3.2"
+                                    }
+                                ]
+                            };
+
+                            addMessage(dummyResponse.answer, false, dummyResponse.references);
                         }, 1000);
                     }
                 });
