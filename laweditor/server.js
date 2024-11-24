@@ -285,7 +285,7 @@ app.get('/download-document/:id', async (req, res) => {
 });
 
 // Add endpoint to get document for editing
-app.get('/api/documents/:id/edit', async (req, res) => {
+app.get('/api/documents/:id/edit',requireLogin, async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -327,8 +327,8 @@ app.get('/api/documents/:id/edit', async (req, res) => {
   }
 });
 
-app.get('/view-document/:id', async (req, res) => {
-  if (!req.session.user) {
+app.get('/view-document/:id',async (req, res) => {
+  if (!req.session?.user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
