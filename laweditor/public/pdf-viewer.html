@@ -12,15 +12,73 @@
             width: 100%;
             margin: 0;
             padding: 0;
+            transition: width 0.1s ease;
         }
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
         }
+        .chat-sidebar {
+            transition: transform 0.3s ease;
+            min-width: 280px;
+            max-width: 600px;
+            z-index: 50;
+        }
+        .chat-sidebar.hidden {
+            transform: translateX(100%);
+        }
+        #adobe-dc-view.sidebar-open {
+            width: calc(100% - var(--sidebar-width, 320px));
+        }
+        .resize-handle {
+            position: absolute;
+            left: -2px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #e5e7eb;
+            cursor: ew-resize;
+            transition: background-color 0.2s;
+            z-index: 60;
+        }
+        .resize-handle:hover,
+        .resize-handle.active {
+            background-color: #3b82f6;
+        }
+        .resize-handle::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px;
+            height: 20px;
+            background-color: #94a3b8;
+        }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        #chatToggle.hidden {
+            display: none;
+        }
+        .resize-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 40;
+            display: none;
+        }
+        .resize-overlay.active {
+            display: block;
+        }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen">
     <nav class="bg-white shadow-lg h-16">
         <div class="max-w-7xl mx-auto px-4 h-full">
             <div class="flex justify-between items-center h-full">
@@ -33,80 +91,235 @@
                     </button>
                     <h1 id="documentTitle" class="text-xl font-semibold text-gray-800"></h1>
                 </div>
+                <button id="chatToggle" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Chat with Dikea
+                </button>
             </div>
         </div>
     </nav>
-    <div id="adobe-dc-view"></div>
+    <div class="flex flex-1 relative">
+        <div id="adobe-dc-view"></div>
+        
+        <!-- Resize Overlay -->
+        <div id="resizeOverlay" class="resize-overlay"></div>
+
+        <!-- Chat Sidebar -->
+        <div id="chatSidebar" class="chat-sidebar hidden fixed right-0 top-16 bottom-0 w-80 bg-white shadow-lg flex flex-col">
+            <!-- Resize Handle -->
+            <div id="resizeHandle" class="resize-handle"></div>
+            
+            <!-- Chat Header -->
+            <div class="p-4 bg-blue-500 text-white">
+                <div class="chat-header">
+                    <div>
+                        <div class="text-lg font-semibold">Dikea AI</div>
+                        <div class="flex items-center mt-2 text-sm bg-blue-600 rounded p-2">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span id="chatDocumentTitle">document.pdf</span>
+                        </div>
+                    </div>
+                    <button id="closeChatBtn" class="text-white hover:text-gray-200 p-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="flex-1 overflow-y-auto p-4 bg-gray-50" id="chatMessages">
+                <div class="bg-white rounded-lg p-3 shadow-sm mb-4">
+                    <div class="text-sm text-blue-500 font-semibold mb-1">Dikea AI</div>
+                    <div class="text-gray-700">Hello! I'm here to help you with your document. Feel free to ask any questions!</div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-4 bg-white border-t">
+                <textarea id="chatInput" class="w-full border rounded-lg p-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Type your message..."></textarea>
+                <button id="sendMessage" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                    Send Message
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const fileId = urlParams.get('fileId');
-            const fileName = urlParams.get('fileName');
-
-            if (fileName) {
-                document.getElementById('documentTitle').textContent = fileName;
-                document.title = `Viewing: ${fileName}`;
-            }
-
-            if (!fileId) {
-                alert('No document specified');
-                window.location.href = '/documents';
-                return;
-            }
-
-            // Initialize Adobe PDF Embed API
-            const adobeDCView = new AdobeDC.View({
-                clientId: "8c0cd670273d451cbc9b351b11d22318", // Adobe PDF Embed API client ID
-                divId: "adobe-dc-view"
-            });
-
-            // Show the PDF
-            adobeDCView.previewFile({
-                content: { location: { url: `/view-document/${fileId}` } },
-                metaData: { fileName: fileName || 'document.pdf' }
-            }, {
-                embedMode: "FULL_WINDOW",
-                showDownloadPDF: true,
-                showPrintPDF: true,
-                showLeftHandPanel: true,
-                showAnnotationTools: true,
-                enableFormFilling: true,
-                showZoomControl: true,
-                showPageControls: true,
-                showBookmarks: true,
-                enableSearchAPIs: true,
-            });
-
-            // Add event listeners for various PDF interactions
-            adobeDCView.registerCallback(
-                AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
-                function(event) {
-                    switch (event.type) {
-                        case "DOCUMENT_OPEN":
-                            console.log("Document opened successfully");
-                            break;
-                        case "PAGE_VIEW":
-                            console.log("Page viewed:", event.data);
-                            break;
-                        case "SAVE_API":
-                            console.log("Document saved");
-                            break;
-                        case "TEXT_COPY":
-                            console.log("Text copied");
-                            break;
-                        case "ANNOTATION_ADDED":
-                            console.log("Annotation added:", event.data);
-                            break;
-                        case "ANNOTATION_UPDATED":
-                            console.log("Annotation updated:", event.data);
-                            break;
-                        case "ANNOTATION_DELETED":
-                            console.log("Annotation deleted:", event.data);
-                            break;
+            // First check if user is authenticated
+            fetch('/check-session')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.isAuthenticated) {
+                        window.location.href = '/';
+                        return;
                     }
+                    initializeViewer();
+                })
+                .catch(error => {
+                    console.error('Session check failed:', error);
+                    window.location.href = '/';
+                });
+
+            function initializeViewer() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const fileId = urlParams.get('fileId');
+                const fileName = urlParams.get('fileName');
+
+                if (fileName) {
+                    document.getElementById('documentTitle').textContent = fileName;
+                    document.getElementById('chatDocumentTitle').textContent = fileName;
+                    document.title = `Viewing: ${fileName}`;
                 }
-            );
+
+                if (!fileId) {
+                    alert('No document specified');
+                    window.location.href = '/documents';
+                    return;
+                }
+
+                // Initialize Adobe PDF Embed API
+                const adobeDCView = new AdobeDC.View({
+                    clientId: "8c0cd670273d451cbc9b351b11d22318",
+                    divId: "adobe-dc-view"
+                });
+
+                // Show the PDF
+                adobeDCView.previewFile({
+                    content: { location: { url: `/view-document/${fileId}` } },
+                    metaData: { fileName: fileName || 'document.pdf' }
+                }, {
+                    embedMode: "FULL_WINDOW",
+                    showDownloadPDF: true,
+                    showPrintPDF: true,
+                    showLeftHandPanel: true,
+                    showAnnotationTools: true,
+                    enableFormFilling: true,
+                    showZoomControl: true,
+                    showPageControls: true,
+                    showBookmarks: true,
+                    enableSearchAPIs: true,
+                });
+
+                // Chat functionality
+                const chatToggle = document.getElementById('chatToggle');
+                const chatSidebar = document.getElementById('chatSidebar');
+                const pdfView = document.getElementById('adobe-dc-view');
+                const chatInput = document.getElementById('chatInput');
+                const sendMessage = document.getElementById('sendMessage');
+                const chatMessages = document.getElementById('chatMessages');
+                const resizeHandle = document.getElementById('resizeHandle');
+                const closeChatBtn = document.getElementById('closeChatBtn');
+                const resizeOverlay = document.getElementById('resizeOverlay');
+
+                function toggleChat(show) {
+                    chatSidebar.classList.toggle('hidden', !show);
+                    pdfView.classList.toggle('sidebar-open', show);
+                    chatToggle.classList.toggle('hidden', show);
+                }
+
+                chatToggle.addEventListener('click', () => toggleChat(true));
+                closeChatBtn.addEventListener('click', () => toggleChat(false));
+
+                // Resize functionality
+                let isResizing = false;
+
+                resizeHandle.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    resizeHandle.classList.add('active');
+                    resizeOverlay.classList.add('active');
+                    document.body.style.cursor = 'ew-resize';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+
+                    const containerRect = document.body.getBoundingClientRect();
+                    const width = containerRect.right - e.clientX;
+
+                    if (width >= 280 && width <= 600) {
+                        chatSidebar.style.width = `${width}px`;
+                        document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        resizeHandle.classList.remove('active');
+                        resizeOverlay.classList.remove('active');
+                        document.body.style.cursor = '';
+                    }
+                });
+
+                function addMessage(message, isUser = false) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'bg-white rounded-lg p-3 shadow-sm mb-4';
+                    messageDiv.innerHTML = `
+                        <div class="text-sm ${isUser ? 'text-green-500' : 'text-blue-500'} font-semibold mb-1">
+                            ${isUser ? 'You' : 'Dikea AI'}
+                        </div>
+                        <div class="text-gray-700">${message}</div>
+                    `;
+                    chatMessages.appendChild(messageDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+
+                sendMessage.addEventListener('click', () => {
+                    const message = chatInput.value.trim();
+                    if (message) {
+                        addMessage(message, true);
+                        chatInput.value = '';
+                        
+                        // Simulate AI response (replace with actual API call)
+                        setTimeout(() => {
+                            addMessage("I understand you're asking about this document. How can I help you analyze or understand it better?");
+                        }, 1000);
+                    }
+                });
+
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage.click();
+                    }
+                });
+
+                // Adobe DC View event listeners
+                adobeDCView.registerCallback(
+                    AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
+                    function(event) {
+                        switch (event.type) {
+                            case "DOCUMENT_OPEN":
+                                console.log("Document opened successfully");
+                                break;
+                            case "PAGE_VIEW":
+                                console.log("Page viewed:", event.data);
+                                break;
+                            case "SAVE_API":
+                                console.log("Document saved");
+                                break;
+                            case "TEXT_COPY":
+                                console.log("Text copied");
+                                break;
+                            case "ANNOTATION_ADDED":
+                                console.log("Annotation added:", event.data);
+                                break;
+                            case "ANNOTATION_UPDATED":
+                                console.log("Annotation updated:", event.data);
+                                break;
+                            case "ANNOTATION_DELETED":
+                                console.log("Annotation deleted:", event.data);
+                                break;
+                        }
+                    }
+                );
+            }
         });
     </script>
 </body>
