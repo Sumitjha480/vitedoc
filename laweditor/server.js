@@ -237,8 +237,12 @@ app.post('/upload', (req, res) => {
       type: req.file.mimetype,
     });
 
-    doc.save()
-      .then(() => res.json({ success: true }))
+doc.save()
+      .then((savedDoc) => res.json({ 
+        success: true,
+        fileId: savedDoc._id,
+        fileName: savedDoc.name
+      }))
       .catch(error => {
         console.error('Upload error:', error);
         res.status(500).json({ error: 'Error saving file' });
@@ -246,6 +250,22 @@ app.post('/upload', (req, res) => {
   });
 });
 
+// List documents endpoint
+app.get('/list-documents', requireLogin, async (req, res) => {
+  try {
+const documents = await Document.find({ type: 'application/pdf' }, { content: 0 });
+    const formattedDocs = documents.map(doc => ({
+      id: doc._id,
+      name: doc.name
+    }));
+    res.json(formattedDocs);
+  } catch (error) {
+    console.error('Error listing documents:', error);
+    res.status(500).json({ error: 'Error listing documents' });
+  }
+});
+
+// Get all documents
 app.get('/api/documents', async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ error: 'Unauthorized' });
